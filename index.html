@@ -443,7 +443,7 @@ function buildXlsx(){const wb=XLSX.utils.book_new(),S=act(),ss=D.sessions.filter
  ws0['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(1,body.length),c:nc-1}})};XLSX.utils.book_append_sheet(wb,ws0,'Class data');
  // ---- sheet 2: Dashboard (same rows and order as before) ----
  const W=S.map(s=>({s,m:qGrade(s.id)})),G=W.filter(x=>x.m!=null).sort((a,b)=>b.m-a.m),all=Q.flatMap(q=>S.map(s=>q.scores[s.id]).filter(okv).map(v=>100*v/q.max)),at=S.map(s=>attStats(s.id).pct).filter(x=>x!=null),tc={High:0,Medium:0,Low:0};G.forEach(x=>tc[tier(x.m)[0]]++);
- const NC=8,rows=[],mg=[],hs={},Rw=(cells,h)=>{rows.push(cells);if(h)hs[rows.length-1]={hpt:h}},M=(c,n)=>mg.push({s:{r:rows.length-1,c},e:{r:rows.length-1,c:c+n-1}}),
+ const NC=5,rows=[],mg=[],hs={},Rw=(cells,h)=>{rows.push(cells);if(h)hs[rows.length-1]={hpt:h}},M=(c,n)=>mg.push({s:{r:rows.length-1,c},e:{r:rows.length-1,c:c+n-1}}),
  B=()=>Rw([C('')]),sec=t=>{Rw(span(t,ST.sec,NC),22);M(0,NC)},kv=(k,v,z)=>Rw([C(k,ST.lab),C(v,ST.val,z)],20),
  th=(...h)=>Rw(h.map(x=>C(x,ST.th)),24),
  lv={High:'C6EFCE',Medium:'FFEB9C',Low:'FFC7CE'};
@@ -451,9 +451,9 @@ function buildXlsx(){const wb=XLSX.utils.book_new(),S=act(),ss=D.sessions.filter
  kv('Students',S.length);kv('Quizzes',Q.length);kv('Sessions',ss.length);kv('Class quiz average %',all.length?pc(all.reduce((a,b)=>a+b,0)/all.length):'',PCT);kv('Attendance %',at.length?Math.round(at.reduce((a,b)=>a+b,0)/at.length):'',PCT0);B();
  sec('PERFORMANCE LEVELS');th('Level','Students');
  ['High','Medium','Low'].forEach(k=>Rw([C(k,cs(ST.lab,lv[k])),C(tc[k],ST.cen)]));Rw([C('Not graded',ST.lab),C(S.length-G.length,ST.cen)]);B();
- sec('QUIZZES');th('Quiz','Date','Max','Graded','Average %','Highest %','Lowest %','Pass rate %');
+ const qr=[['Quiz','Date','Max','Graded','Average %','Highest %','Lowest %','Pass rate %'].map(x=>C(x,ST.th))];
  Q.forEach(q=>{const p=S.map(s=>q.scores[s.id]).filter(okv).map(v=>100*v/q.max),av=p.length?pc(p.reduce((a,b)=>a+b,0)/p.length):'',hi=p.length?pc(Math.max(...p)):'',lo=p.length?pc(Math.min(...p)):'';
-  Rw([C(q.title,ST.val),C(q.date,ST.cen),C(q.max,ST.cen),C(p.length,ST.cen),C(av,cs(ST.cen,tf(av===''?null:av)),PCT),C(hi,cs(ST.cen,tf(hi===''?null:hi)),PCT),C(lo,cs(ST.cen,tf(lo===''?null:lo)),PCT),C(p.length?Math.round(100*p.filter(x=>x>=D.set.mid).length/p.length):'',ST.cen,PCT0)])});B();
+  qr.push([C(q.title,ST.val),C(q.date,ST.cen),C(q.max,ST.cen),C(p.length,ST.cen),C(av,cs(ST.cen,tf(av===''?null:av)),PCT),C(hi,cs(ST.cen,tf(hi===''?null:hi)),PCT),C(lo,cs(ST.cen,tf(lo===''?null:lo)),PCT),C(p.length?Math.round(100*p.filter(x=>x>=D.set.mid).length/p.length):'',ST.cen,PCT0)])});
  sec('ATTENDANCE PER DAY');th('Day','Present','Absent','Not recorded','Present %');
  ss.forEach(x=>{const m=D.att[x.id]||{},p=S.filter(s=>m[s.id]==='Present'||m[s.id]==='Late').length,ab=S.filter(s=>m[s.id]==='Absent').length;
   Rw([C(slab(x),ST.val),C(p,cs(ST.cen,p?'C6EFCE':null)),C(ab,cs(ST.cen,ab?'FFC7CE':null)),C(S.length-p-ab,ST.cen),C(p+ab?Math.round(100*p/(p+ab)):'',ST.cen,PCT0)])});B();
@@ -463,7 +463,8 @@ function buildXlsx(){const wb=XLSX.utils.book_new(),S=act(),ss=D.sessions.filter
  const L2=R.filter(r=>r.n>0).sort((a,b)=>b.net-a.net);sec('LIVE POINTS (separate from quiz scores)');th('#','Name','Bonus','Penalty','Net');
  L2.slice(0,5).forEach((r,i)=>Rw([C(i+1,ST.cen),C(r.s.name,ST.val),C(r.b,ST.cen),C(r.p,ST.cen),C(r.net,ST.cen)]));
  const ni=R.filter(r=>r.n===0).map(r=>r.s.name).join(', ');Rw([C('No interaction',ST.lab)].concat(span(ni,ST.val,NC-1)),Math.max(20,16*Math.ceil(len(ni)/80)));M(1,NC-1);
- XLSX.utils.book_append_sheet(wb,mkws(rows,[30,16,12,12,12,12,12,12],mg,hs),'Dashboard');return wb}
+ XLSX.utils.book_append_sheet(wb,mkws(rows,[28,26,14,14,14],mg,hs),'Dashboard');
+ if(Q.length)XLSX.utils.book_append_sheet(wb,mkws(qr,[30,14,8,10,12,12,12,14],null,{0:{hpt:30}}),'Quizzes');return wb}
 // ---- student Excel: organised + styled (uses xlsx-js-style when it loads; falls back to plain cells otherwise) ----
 let xsTried=false;
 async function loadStyledXlsx(){if(xsTried)return;xsTried=true;await new Promise(r=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';s.onload=r;s.onerror=r;document.head.appendChild(s)})}
